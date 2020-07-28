@@ -5,8 +5,8 @@ extension String : Error {
 }
 
 public struct AttributeNode : Codable, Equatable {
-    var attributeName : String
-    var value : String
+    public var attributeName : String
+    public var value : String
 }
 
 public enum SANNode : Codable, Equatable {
@@ -45,9 +45,84 @@ public enum SANNode : Codable, Equatable {
     }
 
     case SocialNode(String), AttributeNode(AttributeNode)
+
+    public var isSocialNode : Bool {
+        get {
+            switch self {
+            case .SocialNode:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    public var isAttributeNode : Bool {
+        get {
+            switch self {
+            case .AttributeNode:
+                return true
+            default:
+                return false
+            }
+        }
+    }
+
+    public var asAttributeNode : AttributeNode? {
+        get {
+            switch self {
+                case let .AttributeNode(a):
+                return a
+            default:
+                return nil
+            }
+        }
+    }
 }
 
-public typealias SocialAttriubteNetwork = WeightedUniqueElementsGraph<SANNode,Double>
+extension Graph {
+    public func neighborsIndexForIndex(_ index: Int) -> [Int] {
+        return edges[index].map({$0.v})
+    }
+
+    public func numberNeighborsForIndex(_ index: Int) -> Int {
+        return edges[index].count
+    }
+}
+
+public class SocialAttriubteNetwork : WeightedUniqueElementsGraph<SANNode,Double> {
+    /// Calculate the AA-SAN value between two nodes
+    ///
+    /// - Parameters:
+    /// - u: The index of the first node
+    /// - v: The index of the second node
+    /// - Returns: The AA-SAN value between nodes at u and v
+    public func AdamicAdar(u : Int, v : Int) throws -> Double {
+        var u = u
+        var v = v
+        if(self.vertexAtIndex(u).isAttributeNode) {
+            let tmp = u
+            u = v
+            v = tmp
+            if(self.vertexAtIndex(u).isAttributeNode) {
+                throw "Two Attribute nodes passed to AdamicAdar"
+            }
+        }
+        switch self.vertexAtIndex(v) {
+        case .AttributeNode:
+            let socialNeighboursU = self.neighborsIndexForIndex(u)
+            .filter {self.vertexAtIndex($0).isSocialNode}
+            let socialNeighboursV = self.neighborsIndexForIndex(v)
+            .filter {self.vertexAtIndex($0).isSocialNode}
+            let nodes = Set(socialNeighboursU).intersection(socialNeighboursV)
+            return nodes.reduce(0, {(score : Double, node : Int) -> Double in 
+                return score + 1/(log(1.0/Double(self.numberNeighborsForIndex(node))))
+            })
+        case .SocialNode:
+            throw "NYI"
+        }
+    }
+}
 
 public func loadEgoNetwork(dir: URL, directedEdge : Bool = false) throws -> SocialAttriubteNetwork {
     guard let files = try? FileManager.default.contentsOfDirectory(
@@ -60,7 +135,7 @@ public func loadEgoNetwork(dir: URL, directedEdge : Bool = false) throws -> Soci
         String($0.prefix(while: {$0 != "."}))
     }
 
-    let graph = WeightedUniqueElementsGraph<SANNode,Double>()
+    let graph = SocialAttriubteNetwork()
 
     func readFile(file : String) throws-> String {
         guard let contents = try? String(contentsOf: dir.appendingPathComponent(file)) else {
