@@ -1,9 +1,12 @@
 import SwiftSAN
 import Foundation
 
-var facebookDir = URL(fileURLWithPath: #filePath)
-facebookDir.deleteLastPathComponent()
-facebookDir = facebookDir.appendingPathComponent("../../Resources/facebook")
+guard let facebookDir = Bundle.module.url(forResource: "facebook", withExtension: nil) else {
+    print("Can't load facebook dataset")
+    exit(0)
+}
+
+let outputDir = URL(fileURLWithPath: FileManager().currentDirectoryPath)
 
 let g = try loadEgoNetwork(dir: facebookDir)
 var attributeNodes = g.vertices.filter { $0.isAttributeNode }
@@ -34,7 +37,7 @@ for s in socialNodes {
 }
 
 try output.write(
-    to: facebookDir.appendingPathComponent("classification.csv"),
+    to: outputDir.appendingPathComponent("classification.csv"),
     atomically: true,
     encoding: .utf8)
 
@@ -63,7 +66,7 @@ for i in 0..<numDatasets {
         + "\(g.edgeExists(fromIndex: s.index, toIndex: classNode.graphIndex) ? "1" : "0")\n"
     }
     try output.write(
-        to: facebookDir.appendingPathComponent("classification-\(classNode.node.value)(p\(dist.key)).csv"),
+        to: outputDir.appendingPathComponent("classification-\(classNode.node.value)(p\(dist.key)).csv"),
         atomically: true,
         encoding: .utf8)
 }

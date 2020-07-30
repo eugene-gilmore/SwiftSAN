@@ -19,7 +19,8 @@ let package = Package(
             dependencies: ["SwiftGraph"]),
         .target(
             name: "Demo",
-            dependencies: ["SwiftSAN"]),
+            dependencies: ["SwiftSAN"],
+            resources: [.copy("facebook")]),
         .testTarget(
             name: "SwiftSANTests",
             dependencies: ["SwiftSAN"]),

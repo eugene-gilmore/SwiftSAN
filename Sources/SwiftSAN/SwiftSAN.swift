@@ -116,7 +116,7 @@ public class SocialAttriubteNetwork : WeightedUniqueElementsGraph<SANNode,Double
             .filter {self.vertexAtIndex($0).isSocialNode}
             let nodes = Set(socialNeighboursU).intersection(socialNeighboursV)
             return nodes.reduce(0, {(score : Double, node : Int) -> Double in 
-                return score + 1/(log(1.0/Double(self.numberNeighborsForIndex(node))))
+                return score + 1.0/(log(Double(self.numberNeighborsForIndex(node))))
             })
         case .SocialNode:
             throw "NYI"
